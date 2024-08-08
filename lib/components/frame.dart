@@ -96,10 +96,15 @@ class _DetailPageState extends State<DetailPage>
               ),
               SizedBox(height: 4),
               if (images.isNotEmpty)
-                Image.network(
-                  images[0],
-                  height: 20,
-                  fit: BoxFit.contain,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Image.network(
+                      images[0],
+                      height: 20,
+                      fit: BoxFit.contain,
+                    ),
+                  ],
                 )
               else
                 Text('아직 만드는 중...'),
@@ -212,11 +217,40 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
+  GoogleMapController? _mapController;
   final LatLng _center = const LatLng(37.5758772, 126.9768121);
   final _list = ['서울', '대구', '포항', '대전'];
   String _selectedCity = '서울';
   Set<Marker> _markers = {};
   bool _isLoading = true;
+
+  void _adjustCameraToFitMarkers() {
+    if (_markers.isEmpty) return;
+
+    double minLat = _markers.first.position.latitude;
+    double maxLat = _markers.first.position.latitude;
+    double minLng = _markers.first.position.longitude;
+    double maxLng = _markers.first.position.longitude;
+
+    for (final marker in _markers) {
+      if (marker.position.latitude < minLat) minLat = marker.position.latitude;
+      if (marker.position.latitude > maxLat) maxLat = marker.position.latitude;
+      if (marker.position.longitude < minLng)
+        minLng = marker.position.longitude;
+      if (marker.position.longitude > maxLng)
+        maxLng = marker.position.longitude;
+    }
+
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(minLat, minLng),
+          northeast: LatLng(maxLat, maxLng),
+        ),
+        100.0, // 패딩 값
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -228,22 +262,20 @@ class _MapPageState extends State<MapPage> {
     // 로딩 시작
     setState(() {
       _isLoading = true;
+      _markers.clear();
     });
 
     try {
-      // Firestore의 'location' 컬렉션에서 모든 문서를 가져옴
       QuerySnapshot locationSnapshot =
           await FirebaseFirestore.instance.collection('restaurant').get();
-
-      // 기존 마커를 모두 제거
-      _markers.clear();
 
       // 각 문서에 대해 마커 생성
       for (var doc in locationSnapshot.docs) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
         if (data['location'] != null) {
           GeoPoint geoPoint = data['location'];
-          _markers.add(Marker(
+
+          Marker marker = Marker(
             markerId: MarkerId(doc.id), // 문서 ID를 마커 ID로 사용
             position: LatLng(geoPoint.latitude, geoPoint.longitude), // 위치 설정
             infoWindow: InfoWindow(
@@ -262,17 +294,24 @@ class _MapPageState extends State<MapPage> {
                 );
               },
             ),
-          ));
+          );
+
+          setState(() {
+            _markers.add(marker);
+          });
         }
       }
+      setState(() {
+        _isLoading = false; // 로딩 종료
+      });
     } catch (e) {
       // 오류 처리 (예: 로그 출력)
       print('Error fetching locations: $e');
     } finally {
-      // 로딩 종료
       setState(() {
         _isLoading = false; // 로딩 상태 업데이트
       });
+      _adjustCameraToFitMarkers();
     }
   }
 
@@ -306,6 +345,11 @@ class _MapPageState extends State<MapPage> {
       body: Stack(
         children: [
           GoogleMap(
+            onMapCreated: (GoogleMapController controller) {
+              _mapController = controller;
+              // 지도가 생성된 후 마커를 생성하고 카메라를 조정합니다.
+              _createMarkers();
+            },
             initialCameraPosition: CameraPosition(
               target: _center,
               zoom: 11.0,
@@ -351,12 +395,26 @@ class _MapPageState extends State<MapPage> {
                       },
                       child: Row(
                         children: [
-                          Image.network(
-                            banner[0],
-                            height: 100,
-                            fit: BoxFit.contain,
+                          if (banner.isNotEmpty)
+                            Image.network(
+                              banner[0],
+                              height: 100,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                    Icons.error); // 이미지 로드 실패 시 에러 아이콘 표시
+                              },
+                            )
+                          else
+                            Container(
+                              height: 100,
+                              width: 100,
+                              color: Colors.grey, // 이미지가 없을 때 회색 박스 표시
+                              child: Icon(Icons.image_not_supported),
+                            ),
+                          SizedBox(
+                            width: 15,
                           ),
-                          SizedBox(width: 16), // 이미지와 텍스트 사이의 간격
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
