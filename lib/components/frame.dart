@@ -20,7 +20,7 @@ class Frame extends StatelessWidget {
             return Center(child: Text('No data available'));
           }
           // MapPage를 직접 반환하는 대신, 데이터를 MapPage에 전달합니다.
-          return MapPage(restaurants: snapshot.data!.docs);
+          return MapPage(restaurant: snapshot.data!.docs);
         },
       ),
     );
@@ -203,9 +203,9 @@ class _DetailPageState extends State<DetailPage>
 }
 
 class MapPage extends StatefulWidget {
-  final List<DocumentSnapshot> restaurants;
+  final List<DocumentSnapshot> restaurant;
 
-  MapPage({required this.restaurants});
+  MapPage({required this.restaurant});
 
   @override
   _MapPageState createState() => _MapPageState();
@@ -216,6 +216,7 @@ class _MapPageState extends State<MapPage> {
   final _list = ['서울', '대구', '포항', '대전'];
   String _selectedCity = '서울';
   Set<Marker> _markers = {};
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -223,20 +224,56 @@ class _MapPageState extends State<MapPage> {
     _createMarkers();
   }
 
-  void _createMarkers() {
-    _markers.clear();
-    for (var restaurant in widget.restaurants) {
-      Map<String, dynamic> data = restaurant.data() as Map<String, dynamic>;
-      if (data['location'] != null) {
-        _markers.add(Marker(
-          markerId: MarkerId(restaurant.id),
-          position:
-              LatLng(data['location'].latitude, data['location'].longitude),
-          infoWindow: InfoWindow(title: data['name']),
-        ));
+  Future<void> _createMarkers() async {
+    // 로딩 시작
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Firestore의 'location' 컬렉션에서 모든 문서를 가져옴
+      QuerySnapshot locationSnapshot =
+          await FirebaseFirestore.instance.collection('restaurant').get();
+
+      // 기존 마커를 모두 제거
+      _markers.clear();
+
+      // 각 문서에 대해 마커 생성
+      for (var doc in locationSnapshot.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        if (data['location'] != null) {
+          GeoPoint geoPoint = data['location'];
+          _markers.add(Marker(
+            markerId: MarkerId(doc.id), // 문서 ID를 마커 ID로 사용
+            position: LatLng(geoPoint.latitude, geoPoint.longitude), // 위치 설정
+            infoWindow: InfoWindow(
+              title: data['name'], // 정보 창 제목
+              onTap: () {
+                // 정보 창 클릭 시 DetailPage로 이동
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DetailPage(
+                        name: data['name'],
+                        subname: '',
+                        data: data,
+                        address: data['address']), // DetailPage로 이동
+                  ),
+                );
+              },
+            ),
+          ));
+        }
       }
+    } catch (e) {
+      // 오류 처리 (예: 로그 출력)
+      print('Error fetching locations: $e');
+    } finally {
+      // 로딩 종료
+      setState(() {
+        _isLoading = false; // 로딩 상태 업데이트
+      });
     }
-    setState(() {});
   }
 
   @override
@@ -284,10 +321,10 @@ class _MapPageState extends State<MapPage> {
                 color: Colors.white,
                 child: ListView.builder(
                   controller: scrollController,
-                  itemCount: widget.restaurants.length,
+                  itemCount: widget.restaurant.length,
                   itemBuilder: (context, index) {
-                    Map<String, dynamic> data = widget.restaurants[index].data()
-                        as Map<String, dynamic>;
+                    Map<String, dynamic> data =
+                        widget.restaurant[index].data() as Map<String, dynamic>;
                     List<String> banner = data['banner'] is List
                         ? List<String>.from(data['banner'])
                         : [];
