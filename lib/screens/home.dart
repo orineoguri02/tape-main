@@ -4,7 +4,6 @@ import 'package:flutter_application_1/components/navigation_bar.dart';
 import 'package:flutter_application_1/screens/Maps/cafe.dart';
 import 'package:flutter_application_1/screens/Maps/park.dart';
 import 'package:flutter_application_1/screens/menu.dart';
-import 'package:flutter_application_1/screens/map.dart';
 import 'package:flutter_application_1/screens/banner1.dart';
 
 class Home extends StatefulWidget {
