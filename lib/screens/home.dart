@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/components/frame.dart';
+import 'package:flutter_application_1/screens/Maps/frame.dart';
 import 'package:flutter_application_1/components/navigation_bar.dart';
+import 'package:flutter_application_1/screens/Maps/cafe.dart';
+import 'package:flutter_application_1/screens/Maps/park.dart';
 import 'package:flutter_application_1/screens/menu.dart';
 import 'package:flutter_application_1/screens/map.dart';
 import 'package:flutter_application_1/screens/banner1.dart';
@@ -90,8 +92,10 @@ class _HomeState extends State<Home> {
                   children: [
                     TextButton(
                         onPressed: () {
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (context) => Map()));
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => CafeFrame()));
                         },
                         child: SizedBox(
                             height: 70,
@@ -109,8 +113,10 @@ class _HomeState extends State<Home> {
                   children: [
                     TextButton(
                         onPressed: () {
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (context) => Map()));
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ParkFrame()));
                         },
                         child: SizedBox(
                             height: 70,
