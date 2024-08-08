@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/components/frame.dart';
 import 'package:flutter_application_1/components/navigation_bar.dart';
 import 'package:flutter_application_1/screens/menu.dart';
 import 'package:flutter_application_1/screens/map.dart';
@@ -71,7 +72,7 @@ class _HomeState extends State<Home> {
                     TextButton(
                         onPressed: () {
                           Navigator.push(context,
-                              MaterialPageRoute(builder: (context) => Map()));
+                              MaterialPageRoute(builder: (context) => Frame()));
                         },
                         child: SizedBox(
                             height: 60,

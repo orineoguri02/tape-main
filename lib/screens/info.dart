@@ -524,10 +524,8 @@ class _Scroll1State extends State<Scroll1> {
             width: 340,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount:
-                  imageUrls.isNotEmpty ? imageUrls.length : 1, // 이미지가 없으면 1로 설정
+              itemCount: imageUrls.isNotEmpty ? imageUrls.length : 1,
               itemBuilder: (context, index) {
-                // 이미지가 없을 경우 로딩 인디케이터 표시
                 if (imageUrls.isEmpty) {
                   return Center(child: CircularProgressIndicator());
                 }
